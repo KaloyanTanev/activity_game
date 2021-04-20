@@ -1,6 +1,7 @@
 //TODO: check conventions for imports
 use std::{env, io, path};
 use std::fs::write;
+use std::fs::read_to_string;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
 
@@ -16,9 +17,17 @@ fn input(prompt: &str) -> String{
 
 fn input_int(prompt: &str) -> i32{
     let inp: i32 = input(prompt).trim().parse()
-        .expect("please give me correct string number!");
+        .expect("Please give me correct string number!");
 
     inp
+}
+
+fn read_file(path: path::PathBuf) -> Vec<String>{
+    read_to_string(path)
+        .expect("Something went wrong reading the file")
+        .lines()
+        .map(|x| x.to_string())
+        .collect::<Vec<_>>()
 }
 
 fn write_to_file(path: path::PathBuf, data: &str){
@@ -26,7 +35,7 @@ fn write_to_file(path: path::PathBuf, data: &str){
         .write(true)
         .append(true)
         .open(path)
-        .unwrap();  
+        .unwrap();
 
     if let Err(e) = write!(file, "{}", data) {
         eprintln!("Couldn't write to file: {}", e);
@@ -59,12 +68,18 @@ fn clear(){
     println!("-----File cleared, you can begin new game-----");
 }
 
+fn round(){
+    println!("-----Start round-----");
+    let words = read_file(env::current_dir().unwrap().join("tmp/words"));
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     let command = args[1].clone().to_string();
     match command.as_str() {
         "start" => initialize_words(),
         "clear" => clear(),
+        "round" => round(),
         _ => println!("Invalid argument")
     }
 }
