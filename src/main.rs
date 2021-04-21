@@ -1,5 +1,6 @@
 //TODO: check conventions for imports
 use std::{env, io, path};
+use std::fs::write;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
 
@@ -30,10 +31,15 @@ fn write_to_file(path: path::PathBuf, data: &str){
     if let Err(e) = write!(file, "{}", data) {
         eprintln!("Couldn't write to file: {}", e);
     }
+}
 
+fn clear_file(path: path::PathBuf){
+    let path: path::PathBuf = env::current_dir().unwrap().join("tmp/words");
+    write(path, "").expect("Unable to write file");
 }
 
 fn initialize_words(){
+    println!("-----WELCOME TO ACTIVITY GAME-----");
     let players = input_int("How many players are going to play?");
     let words_per_player = input_int("How many words per player?");
     //TODO: Put curr_dir as global var
@@ -45,14 +51,20 @@ fn initialize_words(){
         // clear terminal
         print!("{}[2J", 27 as char);
     }
+    println!("-----Words added, get ready for action!-----");
+}
+
+fn clear(){
+    clear_file(env::current_dir().unwrap().join("tmp/words"));
+    println!("-----File cleared, you can begin new game-----");
 }
 
 fn main() {
     let args: Vec<String> = env::args().collect();
     let command = args[1].clone().to_string();
-    println!("-----WELCOME TO ACTIVITY GAME-----");
     match command.as_str() {
         "start" => initialize_words(),
+        "clear" => clear(),
         _ => println!("Invalid argument")
     }
 }
