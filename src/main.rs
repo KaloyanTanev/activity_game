@@ -77,24 +77,29 @@ fn round(){
     let mut words = read_file(env::current_dir().unwrap().join("tmp/words"));
     let timeout = input_int("How many seconds per player?") as u64;
 
-    let stop = Arc::new(Mutex::new(false));
-    let stop_clone = Arc::clone(&stop);
-
-    thread::spawn(move || {
-        thread::sleep(Duration::from_secs(timeout/2));
-        println!("You have {} seconds left", timeout/2);
-        thread::sleep(Duration::from_secs(timeout - (timeout/2)));
-        *stop.lock().unwrap() = true;
-        println!("Time is up!");
-    });
-
-    while *stop_clone.lock().unwrap()==false && !words.is_empty() {
-        let idx = rand::thread_rng().gen_range(0..words.len());
-        let word = &words[idx];
-        println!("{}", word);
-        if !input("").trim().eq("n") && *stop_clone.lock().unwrap()==false {
-            words.remove(idx);
+    while !words.is_empty(){
+        let stop = Arc::new(Mutex::new(false));
+        let stop_clone = Arc::clone(&stop);
+    
+        thread::spawn(move || {
+            thread::sleep(Duration::from_secs(timeout/2));
+            println!("-----You have {} seconds left-----", timeout/2);
+            thread::sleep(Duration::from_secs(timeout - (timeout/2)));
+            *stop.lock().unwrap() = true;
+            println!("-----Time is up!-----");
+        });
+    
+        while *stop_clone.lock().unwrap()==false && !words.is_empty() {
+            let idx = rand::thread_rng().gen_range(0..words.len());
+            let word = &words[idx];
+            println!("{}", word);
+            if !input("").trim().eq("n") && *stop_clone.lock().unwrap()==false {
+                words.remove(idx);
+            }
         }
+        print!("{}[2J", 27 as char);
+        println!("-----Click any button for next player-----");
+        input("");
     }
 }
 
