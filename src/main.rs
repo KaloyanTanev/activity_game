@@ -1,8 +1,13 @@
 //TODO: check conventions for imports
-use std::{env, io, path};
+use std::{env, io, path, thread};
+use std::time::Duration;
 use std::fs::write;
+use std::fs::read_to_string;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
+use std::sync::{Mutex, Arc};
+
+use rand::Rng;
 
 fn input(prompt: &str) -> String{
     let mut input = String::new();
@@ -16,9 +21,17 @@ fn input(prompt: &str) -> String{
 
 fn input_int(prompt: &str) -> i32{
     let inp: i32 = input(prompt).trim().parse()
-        .expect("please give me correct string number!");
+        .expect("Please give me correct string number!");
 
     inp
+}
+
+fn read_file(path: path::PathBuf) -> Vec<String>{
+    read_to_string(path)
+        .expect("Something went wrong reading the file")
+        .lines()
+        .map(|x| x.to_string())
+        .collect::<Vec<_>>()
 }
 
 fn write_to_file(path: path::PathBuf, data: &str){
@@ -26,7 +39,7 @@ fn write_to_file(path: path::PathBuf, data: &str){
         .write(true)
         .append(true)
         .open(path)
-        .unwrap();  
+        .unwrap();
 
     if let Err(e) = write!(file, "{}", data) {
         eprintln!("Couldn't write to file: {}", e);
@@ -59,12 +72,44 @@ fn clear(){
     println!("-----File cleared, you can begin new game-----");
 }
 
+fn round(){
+    println!("-----Start round-----");
+    let mut words = read_file(env::current_dir().unwrap().join("tmp/words"));
+    let timeout = input_int("How many seconds per player?") as u64;
+
+    while !words.is_empty(){
+        let stop = Arc::new(Mutex::new(false));
+        let stop_clone = Arc::clone(&stop);
+    
+        thread::spawn(move || {
+            thread::sleep(Duration::from_secs(timeout/2));
+            println!("-----You have {} seconds left-----", timeout/2);
+            thread::sleep(Duration::from_secs(timeout - (timeout/2)));
+            *stop.lock().unwrap() = true;
+            println!("-----Time is up!-----");
+        });
+    
+        while *stop_clone.lock().unwrap()==false && !words.is_empty() {
+            let idx = rand::thread_rng().gen_range(0..words.len());
+            let word = &words[idx];
+            println!("{}", word);
+            if !input("").trim().eq("n") && *stop_clone.lock().unwrap()==false {
+                words.remove(idx);
+            }
+        }
+        print!("{}[2J", 27 as char);
+        println!("-----Click any button for next player-----");
+        input("");
+    }
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     let command = args[1].clone().to_string();
     match command.as_str() {
         "start" => initialize_words(),
         "clear" => clear(),
+        "round" => round(),
         _ => println!("Invalid argument")
     }
 }
