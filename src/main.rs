@@ -7,6 +7,8 @@ use std::fs::OpenOptions;
 use std::io::prelude::*;
 use std::sync::{Mutex, Arc};
 
+use rand::Rng;
+
 fn input(prompt: &str) -> String{
     let mut input = String::new();
 
@@ -72,12 +74,12 @@ fn clear(){
 
 fn round(){
     println!("-----Start round-----");
-    let words = read_file(env::current_dir().unwrap().join("tmp/words"));
-    let timeout: u64 = input_int("How many minutes per player?") as u64;
+    let mut words = read_file(env::current_dir().unwrap().join("tmp/words"));
+    let timeout = input_int("How many seconds per player?") as u64;
 
     let stop = Arc::new(Mutex::new(false));
     let stop_clone = Arc::clone(&stop);
-    
+
     thread::spawn(move || {
         thread::sleep(Duration::from_secs(timeout/2));
         println!("You have {} seconds left", timeout/2);
@@ -86,8 +88,13 @@ fn round(){
         println!("Time is up!");
     });
 
-    while *stop_clone.lock().unwrap()==false {
-        println!("loop");
+    while *stop_clone.lock().unwrap()==false && !words.is_empty() {
+        let idx = rand::thread_rng().gen_range(0..words.len());
+        let word = &words[idx];
+        println!("{}", word);
+        if !input("").trim().eq("n") && *stop_clone.lock().unwrap()==false {
+            words.remove(idx);
+        }
     }
 }
 
